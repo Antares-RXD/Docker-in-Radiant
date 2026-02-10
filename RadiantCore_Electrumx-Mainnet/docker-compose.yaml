@@ -105,7 +105,7 @@ services:
       - CLOUDFLARE_TOKEN=${CLOUDFLARE_TOKEN}
       - DOMAIN=${DOMAIN}
       - EMAIL=${EMAIL}
-    entrypoint: ["/bin/sh", "-c", "chmod +x /cert-manager.sh && /cert-manager.sh"]
+    entrypoint: ["/bin/sh", "/cert-manager.sh"]
 
 volumes:
   radiant-data:

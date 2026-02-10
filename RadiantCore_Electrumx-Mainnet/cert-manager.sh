@@ -1,4 +1,7 @@
-#!/bin/bash
+#!/bin/sh
+
+# Install curl (not included in certbot/dns-cloudflare Alpine image)
+apk add --no-cache curl > /dev/null 2>&1
 
 # Configuration
 DOMAIN="${DOMAIN:-example.com}"
