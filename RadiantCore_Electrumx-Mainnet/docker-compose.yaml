@@ -1,0 +1,116 @@
+services:
+  # Radiant Node (radiantd) - Built from Radiant-Core/Radiant-Core
+  radiant-node:
+    build:
+      context: .
+      dockerfile: Dockerfile.node
+    container_name: radiant-node
+    restart: unless-stopped
+    volumes:
+      - radiant-data:/root/.radiant
+    ports:
+      - "7333:7333"   # P2P port
+    command: >
+      -server=1
+      -listen=0
+      -printtoconsole
+      -rpcuser=${RPC_USER:-radiant}
+      -rpcpassword=${RPC_PASS:-radiant}
+      -rpcallowip=0.0.0.0/0
+      -rpcbind=0.0.0.0
+      -txindex=1
+      -rest=1
+      -dbcache=10
+      -rpcworkqueue=1024
+      -rpcthreads=128
+      -zmqpubhashblock=tcp://0.0.0.0:28332
+    healthcheck:
+      test: ["CMD", "radiant-cli", "-rpcuser=${RPC_USER:-radiant}", "-rpcpassword=${RPC_PASS:-radiant}", "getblockchaininfo"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    deploy:
+      resources:
+        reservations:
+          memory: 2G
+
+  # ElectrumX Server
+  radiant-electrumx:
+    build:
+      context: .
+      dockerfile: Dockerfile.electrumx
+    container_name: electrumx_server
+    restart: unless-stopped
+    depends_on:
+      radiant-node:
+        condition: service_healthy
+    volumes:
+      - radiant-electrumx-data:/root/electrumdb
+    ports:
+      - "50010:50010"   # TCP
+      - "50011:50011"   # WSS (Photonic wallet)
+      - "50012:50012"   # SSL
+    environment:
+      - DAEMON_URL=http://${RPC_USER:-radiant}:${RPC_PASS:-radiant}@radiant-node:7332/
+      - COIN=Radiant
+      - NET=mainnet
+      - DB_ENGINE=rocksdb
+      - DB_DIRECTORY=/root/electrumdb
+      - SERVICES=tcp://0.0.0.0:50010,ssl://0.0.0.0:50012,wss://0.0.0.0:50011,rpc://0.0.0.0:8000
+      - SSL_CERTFILE=/root/electrumdb/server.crt
+      - SSL_KEYFILE=/root/electrumdb/server.key
+      - ALLOW_ROOT=true
+      - CACHE_MB=${CACHE_MB:-2000}
+      - MAX_SESSIONS=${MAX_SESSIONS:-10000}
+      - MAX_SEND=10000000
+      - MAX_RECV=10000000
+      - REQUEST_TIMEOUT=60
+      - COST_SOFT_LIMIT=10000
+      - COST_HARD_LIMIT=100000
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 50010 || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 300s
+    stop_signal: SIGTERM
+    stop_grace_period: 180s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+    deploy:
+      resources:
+        reservations:
+          memory: 4G
+
+  # Cloudflare SSL Cert Manager
+  radiant-cloudflare-ssl:
+    image: certbot/dns-cloudflare
+    container_name: cert_manager
+    restart: unless-stopped
+    volumes:
+      - radiant-electrumx-data:/root/electrumdb
+      - ./cert-manager.sh:/cert-manager.sh:ro
+      - radiant-cert-letsencrypt:/etc/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - CLOUDFLARE_TOKEN=${CLOUDFLARE_TOKEN}
+      - DOMAIN=${DOMAIN}
+      - EMAIL=${EMAIL}
+    entrypoint: ["/bin/sh", "-c", "chmod +x /cert-manager.sh && /cert-manager.sh"]
+
+volumes:
+  radiant-data:
+    name: radiant-node-data
+  radiant-electrumx-data:
+    name: radiant-electrumx-data
+  radiant-cert-letsencrypt:
+    name: radiant-cert-letsencrypt-data
