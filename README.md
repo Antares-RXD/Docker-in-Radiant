@@ -3,6 +3,45 @@
 
 Docker scripts for Radiant blockchain and Optimized image size.
 
+## Quick Start with Docker Compose
+
+### RadiantCore (Mainnet Node)
+
+Run a Radiant full node with Docker Compose:
+
+```bash
+cd RadiantCore
+docker-compose up -d
+```
+
+This will start:
+- **radiant-node**: Radiant full node on mainnet
+  - Port: 7333
+  - RPC: user/password (default credentials)
+
+#### Stop the node
+
+```bash
+docker-compose down
+```
+
+#### View logs
+
+```bash
+docker-compose logs -f
+```
+
+#### Reset the node
+
+```bash
+docker-compose down -v  # Removes the data volume
+docker-compose up -d   # Starts fresh
+```
+
+---
+
+## Manual Docker Usage
+
 ## Create image
 ```
 docker build -t <name-image> ..
