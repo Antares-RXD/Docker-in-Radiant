@@ -31,7 +31,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /build
 
 # Clone Radiant-Core from the official repository
-RUN git clone --depth 1 --branch v2.1.0 https://github.com/Radiant-Core/Radiant-Core.git radiant
+RUN git clone --depth 1 --branch v2.1.1 https://github.com/Radiant-Core/Radiant-Core.git radiant
 WORKDIR /build/radiant
 
 # Build radiantd
