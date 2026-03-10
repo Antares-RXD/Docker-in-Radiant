@@ -49,7 +49,9 @@ RUN mkdir /root/electrumdb
 WORKDIR /root
 
 # Clone from GitHub
-RUN git clone --depth 1 --branch main https://github.com/Antares-RXD/new-rxd-electrumx.git electrumx
+#RUN git clone --depth 1 --branch main https://github.com/Antares-RXD/new-rxd-electrumx.git electrumx
+
+RUN git clone --depth 1 --branch master https://github.com/Radiant-Core/ElectrumX.git electrumx
 
 WORKDIR /root/electrumx
 
